@@ -1,0 +1,4 @@
+AZURE_CLIENT_ID=<service_principal_client_id>
+AZURE_SECRET=<service_principal_password>
+AZURE_SUBSCRIPTION_ID=<azure_subscription_id>
+AZURE_TENANT=<azure_tenant_id>
