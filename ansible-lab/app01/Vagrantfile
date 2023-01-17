@@ -1,0 +1,56 @@
+#Vagrant.configure("2") do |config|
+#
+#  config.vm.box = "centos/7"
+#  config.vm.hostname = "app01"
+#  config.vm.network "private_network", ip: "192.168.2.3"
+#  config.vm.network "forwarded_port", guest: 8080, host: 8080
+#  config.vm.network "forwarded_port", guest: 3000, host: 3000
+#  config.vm.provision "shell", path: "provision.sh"
+#end
+Vagrant.configure('2') do |config|
+  config.vm.box = 'azure'
+  config.ssh.private_key_path = "f:/DevOps/Ansible-TMP/.ssh/id_rsa" # CAUTION - pub and private keys (Clean up before deploying)
+  config.vm.provider :azure do |azure, override|
+
+    #Enter the azure information bellow (turn into variables) - If you got an error to deploy the VM, set the Service Principal using azure cli --role --scopes
+    azure.tenant_id = "1a3714f2-7953-45aa-a0b8-06a6cf2e3d9f"
+    azure.client_id = "1e571f1f-e528-491a-b0d0-3fed02e97df6"
+    azure.client_secret = "SwU8Q~rbscUHb63VtnlQY~lPj0OwX4LPi66UYa2s"
+    azure.subscription_id = "fa53228f-0d0e-4c18-a461-79af01d1c66e"
+
+    #Specify VM parameters
+    azure.vm_name = 'app01-coodesh'
+    #azure.vm_size = 'Standard_B1s'
+    azure.location = 'eastus'
+    azure.vm_image_urn = 'OpenLogic:CentOS:7.5:latest'
+    azure.instance_ready_timeout = 600
+    azure.vm_password = 'TopSecretPassw0rd'
+    azure.admin_username = "Lelo"
+    override.winrm.transport = :ssl
+    override.winrm.port = 5986
+    override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
+    azure.tcp_endpoints = '80:80'
+    azure.tcp_endpoints = '3000:3000'
+  end
+  config.vm.synced_folder ".", "/var/www", type: "smb",
+  smb_password: "nutrilatina", smb_username: "administrador",
+  mount_options: ["administrador","password=nutrilatina"]
+  config.vm.provision "shell", path: "provision.sh"
+  config.vm.network "private_network", ip: "192.168.2.3"
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  virtual_network_name='coodesh-1980'
+end
+
+
+#Local VirtualBOX
+#Vagrant.configure("2") do |config|
+#  config.vm.box = "centos/7"
+#  config.vm.hostname = "control-node"
+#  config.vm.network "private_network", ip: "192.168.2.2"
+#  config.vm.synced_folder ".", "/vagrant", type: "nfs"
+#  config.vm.provision "shell", path: "provision.sh"
+#  config.vm.provider 'virtualbox' do |mprovider|
+#    mprovider.memory = 4096
+#    mprovider.cpus = 2
+#end
+#end

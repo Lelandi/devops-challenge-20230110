@@ -1,0 +1,101 @@
+---
+- name: Configurar servidor de aplicação Java
+  hosts: [apps]
+  user: vagrant
+  become: yes
+
+  tasks:
+    - name: Adicionar usuário de app
+      user:
+        name: app
+        comment: Usuário de aplicação
+        uid: 500
+    - name: Download Apache Maven 
+      get_url: url=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.1.0/apache-maven-3.1.0-bin.tar.gz dest=/tmp/apache-maven-3.1.0-bin.tar.gz
+ 
+    - name: Untar Maven 
+      shell: chdir=/tmp creates=/opt/apache-maven-3.1.0 tar -zxf apache-maven-3.1.0-bin.tar.gz -C /opt
+ 
+    - name: Update path for maven use
+      shell: export PATH=/opt/apache-maven-3.1.0/bin:$PATH
+
+    - name: Instalação do Java
+      yum:
+        name: java-1.8.0-openjdk
+        state: latest
+    - name: Add node.js repo
+      yum_repository:
+        name: nodejs
+        description: Node JS
+        baseurl: https://rpm.nodesource.com/pub_8.x/el/7/x86_64/
+        enabled: 1
+        gpgcheck: 1
+        gpgkey: https://rpm.nodesource.com/pub/el/NODESOURCE-GPG-SIGNING-KEY-EL
+
+    - name: npm Install package
+      yum:
+        name:
+          - https://rpm.nodesource.com/pub_8.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm
+        state: present
+
+    - name: Install nodejs
+      yum:
+        name: nodejs-8.*
+        state: present
+        enablerepo: 'nodesource'
+
+    - name: NPM Prepare and Install 
+      shell: npm install
+      become: yes
+
+    - name: Criação do diretório de app
+      file:
+        path: /opt/calc
+        state: directory
+        owner: app
+        group: app
+    - name: instalacao do git client
+      yum:
+        name: git
+        state: latest
+    - name: Clone do repositório Calculator - app
+      git:
+        repo: 'https://github.com/ahfarmer/calculator.git'
+        dest: /opt/calc
+        clone: yes
+        force: yes
+    
+    - name: Configurar arquivo pom.xml com repositorios maven central
+      template:
+        src: pom.xml
+        dest: /opt/calc/pom.xml
+    - name: Gerar pacote da aplicação
+      shell:
+        cmd: npm run build
+        chdir: /opt/calc/
+      become: yes
+    - name: Create container foo and upload a file
+      azure_rm_storageblob:
+        resource_group: myResourceGroup
+        storage_account_name: clh0002
+        container: foo
+        blob: graylog.png
+        src: ./files/graylog.png
+        public_access: container
+        content_type: 'application/image'
+    - name: Iniciar aplicação Calculator
+      shell:
+        cmd: npm start
+        chdir: /opt/calc/
+      become: yes
+  roles:
+      - configuracao-default-so
+  handlers:
+    - name: reload app
+      systemd:
+        state: restarted
+        daemon_reload: yes 
+        name: 'calc'
+    - name: reload daemon
+      systemd:
+        daemon_reexec: yes

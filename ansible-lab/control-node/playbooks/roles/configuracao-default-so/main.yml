@@ -1,0 +1,16 @@
+- name: Upgrade de todos os pacotes dos SOs
+  yum:
+    name: '*'
+    state: latest
+- name: Instalacao do GIT Client
+  yum:
+    name: git
+    state: latest
+- name: Configurar hosts Calculadora
+      lineinfile:
+        dest: /etc/hosts
+        state: present
+        line: "{{item}}"
+      with_items:
+            - 192.168.2.2 control-node
+            - 192.168.2.3 app01-coodesh
