@@ -1,6 +1,7 @@
 Vagrant.configure('2') do |config|
   config.vm.box = 'azure'
   config.ssh.private_key_path = "f:/DevOps/Ansible-TMP/.ssh/id_rsa" # CAUTION - pub and private keys (Clean up before deploying)
+  config.ssh.forward_agent = true
   config.vm.provider :azure do |azure, override|
 
     # enter the azure information bellow - If you got an error to deploy the VM, set the Service Principal using azure cli --role contributor --scopes
@@ -12,6 +13,7 @@ Vagrant.configure('2') do |config|
     #Specify VM parameters
     azure.vm_name = 'control-node'
     #azure.vm_size = 'Standard_B1s'
+    azure.resource_group_name ='coodesh-test'
     azure.location = 'eastus'
     azure.vm_image_urn = 'OpenLogic:CentOS:7.5:latest'
     azure.instance_ready_timeout = 600
@@ -21,7 +23,7 @@ Vagrant.configure('2') do |config|
     override.winrm.port = 5986
     override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
   end
-  config.vm.synced_folder ".", "/vagrant", type: "smb",
+  config.vm.synced_folder ".", "/vagrant", type: "rsync",
   smb_password: "nutrilatina", smb_username: "administrador",
   mount_options: ["administrador","password=nutrilatina"]
   config.vm.provision "shell", path: "provision.sh"

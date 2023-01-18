@@ -4,6 +4,11 @@ echo "Instalando Ansible. Aguarde..."
 sudo yum -y install ansible
 ansible-galaxy collection install community.general
 cat <<EOT >> /etc/hosts
-192.168.2.2 control-node
-192.168.2.3 app01
+10.0.0.4 control-node
+10.0.0.5 app01-coodesh
 EOT
+cat <<EOT >> /etc/ansible/hosts
+[apps]
+10.0.0.5
+EOT
+\cp /vagrant/vagrant/ansible.cfg /etc/ansible/ansible.cfg

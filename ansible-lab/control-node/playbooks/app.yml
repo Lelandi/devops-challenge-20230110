@@ -99,3 +99,18 @@
     - name: reload daemon
       systemd:
         daemon_reexec: yes
+
+    - name: remove storage account, if it exists
+      azure_rm_storageaccount:
+        resource_group: coodesh-test
+        name: clh0002
+        state: absent
+
+    - name: create an storage account
+      azure_rm_storageaccount:
+        resource_group: coodesh-test
+        name: clh0002
+        type: Standard_RAGRS
+        tags:
+          - testing: testing
+          - delete: on-exit
