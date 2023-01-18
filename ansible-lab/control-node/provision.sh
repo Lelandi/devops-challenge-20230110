@@ -11,4 +11,3 @@ cat <<EOT >> /etc/ansible/hosts
 [apps]
 10.0.0.5
 EOT
-\cp /vagrant/vagrant/ansible.cfg /etc/ansible/ansible.cfg

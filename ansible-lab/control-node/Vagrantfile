@@ -1,9 +1,14 @@
-Vagrant.configure('2') do |config|
-  config.vm.box = 'azure'
-  config.ssh.private_key_path = "f:/DevOps/Ansible-TMP/.ssh/id_rsa" # CAUTION - pub and private keys (Clean up before deploying)
-  config.ssh.forward_agent = true
-  config.vm.provider :azure do |azure, override|
-
+Vagrant.configure('2') do |config|    
+  config.vm.define "control" do |control|
+    control.vm.box = 'azure'
+    control.ssh.private_key_path = "f:/DevOps/Ansible-TMP/.ssh/id_rsa" # CAUTION - pub and private keys (Clean up before deploying)
+    control.ssh.forward_agent = true
+    control.vm.provider :azure do |azure, override|
+    control.vm.synced_folder ".", "/vagrant", type: "rsync",
+    smb_password: "nutrilatina", smb_username: "administrador",
+    mount_options: ["administrador","password=nutrilatina"]
+    control.vm.provision "shell", path: "provision.sh"
+    virtual_network_name='coodesh-1980'
     # enter the azure information bellow - If you got an error to deploy the VM, set the Service Principal using azure cli --role contributor --scopes
     azure.tenant_id = "1a3714f2-7953-45aa-a0b8-06a6cf2e3d9f"
     azure.client_id = "1e571f1f-e528-491a-b0d0-3fed02e97df6"
@@ -23,23 +28,42 @@ Vagrant.configure('2') do |config|
     override.winrm.port = 5986
     override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
   end
-  config.vm.synced_folder ".", "/vagrant", type: "rsync",
-  smb_password: "nutrilatina", smb_username: "administrador",
-  mount_options: ["administrador","password=nutrilatina"]
-  config.vm.provision "shell", path: "provision.sh"
-  virtual_network_name='coodesh-1980'
 end
-
-
-#Local VirtualBOX
-#Vagrant.configure("2") do |config|
-#  config.vm.box = "centos/7"
-#  config.vm.hostname = "control-node"
-#  config.vm.network "private_network", ip: "192.168.2.2"
-#  config.vm.synced_folder ".", "/vagrant", type: "nfs"
-#  config.vm.provision "shell", path: "provision.sh"
-#  config.vm.provider 'virtualbox' do |mprovider|
-#    mprovider.memory = 4096
-#    mprovider.cpus = 2
-#end
-#end
+  config.vm.define "slave" do |slave|
+    slave.vm.box = 'azure'
+    slave.ssh.private_key_path = "f:/DevOps/Ansible-TMP/.ssh/id_rsa" # CAUTION - pub and private keys (Clean up before deploying)
+    slave.ssh.forward_agent = true
+    slave.vm.provider :azure do |azure2, override2|
+  
+      #Enter the azure information bellow (turn into variables) - If you got an error to deploy the VM, set the Service Principal using azure cli --role --scopes
+      azure2.tenant_id = "1a3714f2-7953-45aa-a0b8-06a6cf2e3d9f"
+      azure2.client_id = "1e571f1f-e528-491a-b0d0-3fed02e97df6"
+      azure2.client_secret = "SwU8Q~rbscUHb63VtnlQY~lPj0OwX4LPi66UYa2s"
+      azure2.subscription_id = "fa53228f-0d0e-4c18-a461-79af01d1c66e"
+  
+      #Specify VM parameters
+      azure2.vm_name = 'app01-coodesh'
+      azure2.resource_group_name ='coodesh-test'
+      #azure2.vm_size = 'Standard_B1s'
+      azure2.location = 'eastus'
+      azure2.vm_image_urn = 'OpenLogic:CentOS:7.5:latest'
+      azure2.instance_ready_timeout = 600
+      azure2.vm_password = 'TopSecretPassw0rd'
+      azure2.admin_username = "Lelo"
+      override2.winrm.transport = :ssl
+      override2.winrm.port = 5986
+      override2.winrm.ssl_peer_verification = false # must be false if using a self signed cert
+      azure2.tcp_endpoints = "3000"
+    end
+    slave.vm.synced_folder ".", "/var/www", type: "smb",
+    smb_password: "nutrilatina", smb_username: "administrador",
+    mount_options: ["administrador","password=nutrilatina"]
+    slave.vm.provision "shell", path: "provision.sh"
+    slave.vm.network "private_network", ip: "10.0.0.11"
+    slave.vm.network "forwarded_port", guest: 3000, host: 3000
+    virtual_network_name='coodesh-1980'
+end
+### > vagrant up --provider=azure use this command to create control-node and app01 machines
+### cp /vagrant/vagrant/ansible.cfg /etc/ansible/ansible.cfg move to control-node provision to remove questions
+ 
+end
