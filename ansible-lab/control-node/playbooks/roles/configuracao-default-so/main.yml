@@ -12,5 +12,5 @@
         state: present
         line: "{{item}}"
       with_items:
-            - 192.168.2.2 control-node
-            - 192.168.2.3 app01-coodesh
+            - 10.0.0.5 control-node
+            - 10.0.0.4 app01-coodesh

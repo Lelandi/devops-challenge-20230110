@@ -19,6 +19,20 @@
     - name: Update path for maven use
       shell: export PATH=/opt/apache-maven-3.1.0/bin:$PATH
 
+   - name: Download AzCopy package
+     get_url:
+       url: https://aka.ms/downloadazcopy-v10-linux
+       dest: /tmp/downloadazcopy-v10-linux
+   - name: Unpack AzCopy package
+     command: tar -xf /tmp/downloadazcopy-v10-linux
+   - name: Move AzCopy executable to /usr/local/bin
+     command: mv azcopy_linux_amd64_10.16.2/azcopy /usr/local/bin/
+     become: yes
+
+
+
+
+
     - name: Instalação do Java
       yum:
         name: java-1.8.0-openjdk
@@ -27,7 +41,7 @@
       yum_repository:
         name: nodejs
         description: Node JS
-        baseurl: https://rpm.nodesource.com/pub_8.x/el/7/x86_64/
+        baseurl: https://rpm.nodesource.com/pub_14.x/el/7/x86_64/
         enabled: 1
         gpgcheck: 1
         gpgkey: https://rpm.nodesource.com/pub/el/NODESOURCE-GPG-SIGNING-KEY-EL
@@ -35,14 +49,13 @@
     - name: npm Install package
       yum:
         name:
-          - https://rpm.nodesource.com/pub_8.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm
+          - https://rpm.nodesource.com/pub_14.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm
         state: present
 
-    - name: Install nodejs
+    - name: Install Node.js 14.8
       yum:
-        name: nodejs-8.*
+        name: nodejs-14.8.0-1nodesource
         state: present
-        enablerepo: 'nodesource'
 
     - name: NPM Prepare and Install 
       shell: npm install
@@ -69,14 +82,44 @@
       template:
         src: pom.xml
         dest: /opt/calc/pom.xml
+
+    - name: NPM Clean Cache
+      shell: npm cache clean --force
+      become: yes
+
+    - name: NPM Install 
+      shell: npm install
+      become: yes
+
+    - name: NPM Install React-Scripts
+      shell: npm install react-scripts
+      become: yes
+
+    - name: NPM Audit Fix
+      shell: npm audit fix
+      become: yes
+
     - name: Gerar pacote da aplicação
       shell:
         cmd: npm run build
         chdir: /opt/calc/
       become: yes
+
+    - name: Create "calculator" folder (Fix React under blob storage)
+      shell: mkdir -p "/opt/calc/build/calculator"
+      become: yes
+
+    - name: Copy build files to "calculator" folder (Fix React under blob storage)
+      shell: cp -R "/opt/calc/build/" "/tmp/calculator/" && sudo cp -R "/tmp/calculator/" "/opt/calc/build/calculator/"
+      become: yes
+
+    - name: copy (build/calculator) to storage
+      shell: azcopy "/opt/calc/build" "https://coodeshdevops.blob.core.windows.net/%24web/?sv=2021-04-10&ss=bf&srt=co&se=2023-01-23T05%3A37%3A10Z&sp=rwl&sig=trH72ed52IpWU4RvMFRZIadhcyHI9C%2FlxNR8oMbo4MM%3D" --recursive=true
+      become: yes
+
     - name: Create container foo and upload a file
       azure_rm_storageblob:
-        resource_group: myResourceGroup
+        resource_group: Coodesh-DevOps
         storage_account_name: clh0002
         container: foo
         blob: graylog.png
@@ -114,3 +157,7 @@
         tags:
           - testing: testing
           - delete: on-exit
+
+
+
+
