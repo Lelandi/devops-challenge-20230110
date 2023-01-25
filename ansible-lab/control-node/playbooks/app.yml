@@ -1,50 +1,37 @@
 ---
-- name: Configurar servidor de aplicação Java
+- name: Deploy React App
   hosts: [apps]
   user: vagrant
   become: yes
 
   tasks:
-    - name: Adicionar usuário de app
+    - name: Add app User
       user:
         name: app
         comment: Usuário de aplicação
         uid: 500
-    - name: Download Apache Maven 
-      get_url: url=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.1.0/apache-maven-3.1.0-bin.tar.gz dest=/tmp/apache-maven-3.1.0-bin.tar.gz
+     
+    - name: Download AzCopy package
+      get_url:
+        url: https://aka.ms/downloadazcopy-v10-linux
+        dest: /tmp/downloadazcopy-v10-linux
  
-    - name: Untar Maven 
-      shell: chdir=/tmp creates=/opt/apache-maven-3.1.0 tar -zxf apache-maven-3.1.0-bin.tar.gz -C /opt
- 
-    - name: Update path for maven use
-      shell: export PATH=/opt/apache-maven-3.1.0/bin:$PATH
+    - name: Unpack AzCopy package
+      command: tar -xf /tmp/downloadazcopy-v10-linux
 
-   - name: Download AzCopy package
-     get_url:
-       url: https://aka.ms/downloadazcopy-v10-linux
-       dest: /tmp/downloadazcopy-v10-linux
-   - name: Unpack AzCopy package
-     command: tar -xf /tmp/downloadazcopy-v10-linux
-   - name: Move AzCopy executable to /usr/local/bin
-     command: mv azcopy_linux_amd64_10.16.2/azcopy /usr/local/bin/
-     become: yes
+    - name: Move AzCopy executable to /usr/local/bin
+      command: mv azcopy_linux_amd64_10.17.0/azcopy /usr/local/bin/
+      become: yes
 
+    - name: AzCopy permissions fix
+      shell:
+        cmd: chmod +x azcopy
+        chdir: /usr/local/bin
+      become: yes
 
-
-
-
-    - name: Instalação do Java
-      yum:
-        name: java-1.8.0-openjdk
-        state: latest
-    - name: Add node.js repo
-      yum_repository:
-        name: nodejs
-        description: Node JS
-        baseurl: https://rpm.nodesource.com/pub_14.x/el/7/x86_64/
-        enabled: 1
-        gpgcheck: 1
-        gpgkey: https://rpm.nodesource.com/pub/el/NODESOURCE-GPG-SIGNING-KEY-EL
+    - name: Chown AzCopy to user vagrant
+      command: chown vagrant:vagrant /usr/local/bin/azcopy
+      become: yes
 
     - name: npm Install package
       yum:
@@ -61,27 +48,24 @@
       shell: npm install
       become: yes
 
-    - name: Criação do diretório de app
+    - name: Creation of app directory
       file:
         path: /opt/calc
         state: directory
         owner: app
         group: app
-    - name: instalacao do git client
+ 
+    - name: Git Client Instalation
       yum:
         name: git
         state: latest
-    - name: Clone do repositório Calculator - app
+  
+    - name: Repo Clone Calculator - app
       git:
         repo: 'https://github.com/ahfarmer/calculator.git'
         dest: /opt/calc
         clone: yes
         force: yes
-    
-    - name: Configurar arquivo pom.xml com repositorios maven central
-      template:
-        src: pom.xml
-        dest: /opt/calc/pom.xml
 
     - name: NPM Clean Cache
       shell: npm cache clean --force
@@ -96,10 +80,12 @@
       become: yes
 
     - name: NPM Audit Fix
-      shell: npm audit fix
+      shell:
+        cmd: npm audit fix
+        chdir: /opt/calc/
       become: yes
 
-    - name: Gerar pacote da aplicação
+    - name: Application Package Build
       shell:
         cmd: npm run build
         chdir: /opt/calc/
@@ -110,54 +96,12 @@
       become: yes
 
     - name: Copy build files to "calculator" folder (Fix React under blob storage)
-      shell: cp -R "/opt/calc/build/" "/tmp/calculator/" && sudo cp -R "/tmp/calculator/" "/opt/calc/build/calculator/"
+      shell: cp -R "/opt/calc/build/" "/tmp/calculator/" && sudo cp -R "/tmp/calculator/" "/opt/calc/build/" && sudo rm -f -r /opt/calc/build/calculator/build
       become: yes
 
     - name: copy (build/calculator) to storage
-      shell: azcopy "/opt/calc/build" "https://coodeshdevops.blob.core.windows.net/%24web/?sv=2021-04-10&ss=bf&srt=co&se=2023-01-23T05%3A37%3A10Z&sp=rwl&sig=trH72ed52IpWU4RvMFRZIadhcyHI9C%2FlxNR8oMbo4MM%3D" --recursive=true
-      become: yes
+      shell: /usr/local/bin/azcopy copy "/opt/calc/build/calculator/" "https://coodeshdevops.blob.core.windows.net/%24web/?sv=2021-06-08&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2023-01-30T04:50:59Z&st=2023-01-24T20:50:59Z&spr=https&sig=6yhlm150I7n5N%2BnYzXf4FTGurRBZeq3Ptet0yBssdRg%3D" --recursive=true --overwrite=true && /usr/local/bin/azcopy copy "/opt/calc/build/*.*" "https://coodeshdevops.blob.core.windows.net/%24web/?sv=2021-06-08&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2023-01-30T04:50:59Z&st=2023-01-24T20:50:59Z&spr=https&sig=6yhlm150I7n5N%2BnYzXf4FTGurRBZeq3Ptet0yBssdRg%3D" --recursive=true --overwrite=true
+      become: yes      
 
-    - name: Create container foo and upload a file
-      azure_rm_storageblob:
-        resource_group: Coodesh-DevOps
-        storage_account_name: clh0002
-        container: foo
-        blob: graylog.png
-        src: ./files/graylog.png
-        public_access: container
-        content_type: 'application/image'
-    - name: Iniciar aplicação Calculator
-      shell:
-        cmd: npm start
-        chdir: /opt/calc/
-      become: yes
-  roles:
-      - configuracao-default-so
-  handlers:
-    - name: reload app
-      systemd:
-        state: restarted
-        daemon_reload: yes 
-        name: 'calc'
-    - name: reload daemon
-      systemd:
-        daemon_reexec: yes
-
-    - name: remove storage account, if it exists
-      azure_rm_storageaccount:
-        resource_group: coodesh-test
-        name: clh0002
-        state: absent
-
-    - name: create an storage account
-      azure_rm_storageaccount:
-        resource_group: coodesh-test
-        name: clh0002
-        type: Standard_RAGRS
-        tags:
-          - testing: testing
-          - delete: on-exit
-
-
-
-
+    - name: The application is available on https://coodeshdevops.z13.web.core.windows.net/ 
+      shell: echo "The application is available on https://coodeshdevops.z13.web.core.windows.net/"

@@ -2,5 +2,6 @@
 .vagrant/
 id_rsa.pub.backup.pub
 DevOps.code-workspace
+.ssh/
 # Log files (if you are creating logs in debug mode, uncomment this)
 # *.log
