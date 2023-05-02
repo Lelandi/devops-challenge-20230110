@@ -1,13 +1,11 @@
-﻿# devops-challenge-20230110
-DevOps Challenge Coodesh (DevOps Challenge 20221219)
 Implantação de Calculadora React utilizando IaC
 
 # 1 - Instructions:
-[] Starting from Host Windows without Ansible
+[X] Starting from Host Windows without Ansible
 - Run Install.bat in root directory and follow the instructions
 - The application will be available on https://coodeshdevops.z13.web.core.windows.net/ (Blob Storage with react scripts configuration enabled)
 -----------------------------------------------------
-[] Starting from Host Ansible (Requirement: Control-Node and Application VMS)
+[X] Starting from Host Ansible (Requirement: Control-Node and Application VMS)
 - Access Ansible Control-Node Machine
 - Clone the repository https://github.com/Lelandi/devops-challenge-20230110
 - Run ansible-playbook /playbooks/app.yml inside repository folder
