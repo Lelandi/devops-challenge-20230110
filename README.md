@@ -1,11 +1,11 @@
 Implantação de Calculadora React utilizando IaC
 
 # 1 - Instructions:
-[X] Starting from Host Windows without Ansible
+# Starting from Host Windows without Ansible
 - Run Install.bat in root directory and follow the instructions
 - The application will be available on https://coodeshdevops.z13.web.core.windows.net/ (Blob Storage with react scripts configuration enabled)
 -----------------------------------------------------
-[X] Starting from Host Ansible (Requirement: Control-Node and Application VMS)
+# Starting from Host Ansible (Requirement: Control-Node and Application VMS)
 - Access Ansible Control-Node Machine
 - Clone the repository https://github.com/Lelandi/devops-challenge-20230110
 - Run ansible-playbook /playbooks/app.yml inside repository folder
@@ -18,7 +18,7 @@ Implantação de Calculadora React utilizando IaC
 - [X] Worked Successfully 
 
 ## Stage 2
-- [X] IaaC Ansible done locally 
+- [X] IaC Ansible done locally 
 - [X] Worked Successfully 
 
 ## Stage 3
